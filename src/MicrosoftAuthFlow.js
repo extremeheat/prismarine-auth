@@ -80,12 +80,21 @@ class MicrosoftAuthFlow {
     this.pfb = new PlayfabTokenManager(await cacher.createCache({ cacheName: 'pfb', username }), abortSignal)
   }
 
-  async getMsaToken () {
+  async login (flow = 'code') {
+    if (flow !== 'code') throw new Error('Only `code` flow is supported at the moment')
     await this.ready
     if (await this.msa.verifyTokens()) {
+      // TODO
       debug('[msa] Using existing tokens')
-      const { token } = await this.msa.getAccessToken()
-      return token
+      const cached = await this.msa.getCachedTokens()
+      console.log('Cached Data', cached)
+      return {
+        accessToken: cached.accessToken,
+        accountUUID: cached.accountUUID,
+        // These are not guaranteed to be present, and will only be set for msal flow:
+        accountDisplayName: cached.displayName,
+        accountUsername: cached.accountUsername
+      }
     } else {
       debug('[msa] No valid cached tokens, need to sign in')
       const ret = await this.msa.authDeviceCode((response) => {
@@ -94,15 +103,26 @@ class MicrosoftAuthFlow {
         console.info(response.message)
       })
 
-      if (ret.account) {
-        console.info(`[msa] Signed in as ${ret.account.username}`)
+      if (ret.accountUsername) {
+        console.info(`[msa] Signed in as ${ret.accountUsername}`)
       } else { // We don't get extra account data here per scope
         console.info('[msa] Signed in with Microsoft')
       }
 
       debug('[msa] got auth result', ret)
-      return ret.accessToken
+      return {
+        accessToken: ret.accessToken,
+        accountUUID: ret.accountUUID,
+        // These are not guaranteed to be present, and will only be set for msal flow:
+        accountDisplayName: ret.displayName,
+        accountUsername: ret.accountUsername
+      }
     }
+  }
+
+  async getMsaToken (flow) {
+    const account = await this.login(flow)
+    return account.accessToken
   }
 
   async getPlayfabLogin () {

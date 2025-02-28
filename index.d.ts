@@ -17,6 +17,27 @@ declare module 'prismarine-auth' {
      */
     constructor(username?: string, cacherOrDir?: string | CacheFactory, options?: MicrosoftAuthFlowOptions, codeCallback?: (res: ServerDeviceCodeResponse) => void)
 
+    /**
+     * Authenticates the user using the specified grant type and returns account information.
+     * @param grantType The type of grant to use. Currently only 'code' (default) is supported.
+     * @returns A promise that resolves when the login is complete.
+     */
+    login(grantType: 'code'): Promise<{
+      accessToken: string,
+      accountUUID: string,
+      refreshToken?: string,
+      // Only available on MSAL flow. This is typically the display name.
+      accountDisplayName?: string,
+      // Only available on MSAL flow. This is typically the email address.
+      accountUsername?: string
+    }>
+
+    // /**
+    //  * Logs out the user and clears the token cache.
+    //  * @returns A promise that resolves when the logout is complete.
+    //  */
+    // logout(): Promise<void>
+
     // Returns a Microsoft Oauth access token -- https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens
     getMsaToken(): Promise<string>
     // Returns an XSTS token -- https://docs.microsoft.com/en-us/gaming/xbox-live/api-ref/xbox-live-rest/additional/edsauthorization

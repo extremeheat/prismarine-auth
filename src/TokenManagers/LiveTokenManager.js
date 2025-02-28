@@ -66,6 +66,19 @@ class LiveTokenManager {
     return { valid: cached.valid, token: cached.value.refresh_token, until: cached.expiresOn }
   }
 
+  async getCachedTokens () {
+    const cached = await this.cache.get('tokens')
+    if (!cached) return
+    return {
+      valid: cached.valid,
+      data: cached.value,
+      accessToken: cached.value.access_token,
+      refreshToken: cached.value.refresh_token,
+      accountUUID: userIdToUUID(cached.value.user_id),
+      expiresOn: cached.expiresOn
+    }
+  }
+
   async updateCachedToken (data) {
     await this.cache.set('tokens', data, { obtainedOn: Date.now(), expiresOn: data.expires_in * 1000 })
   }
@@ -146,7 +159,10 @@ class LiveTokenManager {
         if (!token) continue
         this.updateCachedToken(token)
         this.polling = false
-        return { accessToken: token.access_token }
+        return {
+          accessToken: token.access_token,
+          accountUUID: userIdToUUID(token.user_id)
+        }
       } catch (e) {
         console.debug(e)
       }
@@ -155,5 +171,11 @@ class LiveTokenManager {
     throw Error('Authentication failed, timed out')
   }
 }
+
+// Microsoft live.com auth uses a different format for account IDs than Azure AD APIs.
+// live.com uses a 16 character hex string and Azure AD uses a zero-padded UUID
+// (1010101010101010 vs 00000000-0000-0000-1010-101010101010). Thus for lib purposes
+// we need to normalize this so API users can uniquely identify accounts.
+const userIdToUUID = hex => `00000000-0000-0000-${hex.slice(0, 4)}-${hex.slice(4)}`
 
 module.exports = LiveTokenManager
