@@ -145,7 +145,13 @@ class MsaTokenManager {
               cached.Account = { '': response.account }
               this.cache.setPartial('msa', cached)
             }
-            resolve(response)
+            resolve({
+              accessToken: response.accessToken,
+              displayName: response.account.name,
+              accountUsername: response.account.username,
+              accountUUID: response.account.localAccountId,
+              expiresOn: response.expiresOn
+            })
           })
       }).catch((error) => {
         console.warn('[msa] Error getting device code. Ensure your supplied `authTitle` token (or clientId in your supplied MSAL config) is valid and that it has permission to do non-interactive code based auth.')

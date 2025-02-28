@@ -4,7 +4,10 @@
 [![Official Discord](https://img.shields.io/static/v1.svg?label=PrismarineJS&message=Discord&color=blue&logo=discord)](https://discord.gg/GsEFRM8)
 [![Try it on gitpod](https://img.shields.io/badge/try-on%20gitpod-brightgreen.svg)](https://gitpod.io/#https://github.com/PrismarineJS/prismarine-auth)
 
-Quickly and easily obtain auth tokens to authenticate with Microsoft/Xbox/Minecraft/Mojang
+Node.js library to authenticate with Microsoft services, including Xbox Live, Minecraft Java Edition, Minecraft Bedrock Edition, and Microsoft Azure Playfab,
+with built-in caching support.
+
+<!-- This library is designed to be used with the [PrismarineJS](https://github.com/PrismarineJS) ecosystem. -->
 
 ## Installation
 ```shell
@@ -27,7 +30,50 @@ npm install prismarine-auth
     - [abortSignal] {AbortSignal} - (Optional) An AbortSignal to cancel the request.
 - onMsaCode {Function} - (For device code auth) What we should do when we get the code. Useful for passing the code to another function.
 
-### Examples
+### Simple login to a Microsoft account
+
+We can obtain a Microsoft account auth token by calling .login() on the Authflow object.
+
+Without specifying any options, the library will default to the `live` flow, and authenticate with client ID set to Minecraft for Nintendo Switch.
+
+```js
+const { Authflow } = require('prismarine-auth')
+const flow = new Authflow('username', './') // Username and cache directory
+// Initialize login process
+flow.login().then(console.log)
+```
+
+In this example, as we don't pass any special code handling; the library will print a code and URL to the terminal
+that the user can then visit to authenticate. Afterwards, the .login() Promise will resolve and return the following object:
+
+```js
+{
+  accessToken: '...',
+  accountUUID: '...',
+  accountDisplayName: undefined,
+  accountUsername: undefined
+}
+```
+
+Note that `accountDisplayName` and `accountUsername` are not avaliable when using the `live` flow, which is the default.
+`accountUUID` is visible and is the unique identifier for the account that you can use to uniquely identify the Microsoft account.
+
+### Login with a custom client ID
+
+To use a custom client ID, one which you can get from registering an Azure app at the [Microsoft Azure portal](https://portal.azure.com/),
+you can pass the `flow` option to the Authflow constructor and specify the client ID under `authTitle` like this:
+
+```js
+const authflow = new Authflow('username', './', { flow: 'msal', authTitle: '10000000-2000-0000-0000-000000000000' })
+```
+
+and keep the rest of the code the same.
+
+*Note: your Azure app must have non-interactive device code-flow based authentication enabled, under Manage -> Authentication -> "Allow public client flows".*
+
+## API
+
+See [docs/API.md](docs/API.md) and [types](./index.d.ts) for more information.
 
 ### getMsaToken
 ```js
@@ -40,8 +86,9 @@ const flow = new Authflow(userIdentifier, cacheDir)
 flow.getMsaToken().then(console.log)
 ```
 
-**Note**: By default, this library will authenticate as Minecraft for Nintendo Switch, with a `flow` set to `live`. For non-Minecraft applications you should
-register for Microsoft Azure Oauth token. See https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app#register-an-application for more information on obtaining an Azure token. You then use it with the `msal` flow like this:
+**Note**: As noted above, by default, this library will authenticate as Minecraft for Nintendo Switch, with a `flow` set to `live`. For non-Minecraft applications you should
+register for Microsoft Azure Oauth token. See https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app#register-an-application for more information 
+on obtaining an Azure token. You then use it with the `msal` flow like this:
 
 ```js
 const flow = new Authflow(userIdentifier, cacheDir, { flow: 'msal', authTitle: '000-000-000-000' })
@@ -64,7 +111,7 @@ const flow = new Authflow(userIdentifier, cacheDir)
 flow.getMinecraftJavaToken({ fetchProfile: true }).then(console.log)
 ```
 
-### Expected Response
+**Expected Response**
 ```json
 {
     "token": "ey....................",
@@ -92,7 +139,7 @@ const flow = new Authflow(userIdentifier, cacheDir)
 flow.getMinecraftBedrockServicesToken().then(console.log)
 ```
 
-### Expected Response
+**Expected Response**
 ```json
 {
     "mcToken": "MCToken eyJ...",
@@ -125,14 +172,10 @@ flow.getMinecraftBedrockServicesToken().then(console.log)
 }
 ```
 
-### More
-[View more examples here](https://github.com/PrismarineJS/prismarine-auth/tree/master/examples).
-
 See the [types](./index.d.ts) to checkout the full API.
 
-## API
-
-See [docs/API.md](docs/API.md)
+### More Examples
+[View more examples here](https://github.com/PrismarineJS/prismarine-auth/tree/master/examples).
 
 ## Debugging
 
